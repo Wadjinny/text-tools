@@ -1140,6 +1140,72 @@
   box-shadow: none;
 }
 
+/* ——— Route error page ——— */
+
+.error-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background: var(--bg);
+}
+
+.error-card {
+  width: min(480px, 100%);
+  background: var(--white);
+  border-radius: var(--r-card);
+  box-shadow: var(--sh-card);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.error-card h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.6px;
+  color: var(--g900);
+}
+
+.error-card .subtitle {
+  margin: 0;
+  color: var(--g500);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.error-detail {
+  width: 100%;
+  max-height: 200px;
+  overflow: auto;
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--r-ctrl);
+  background: var(--red-soft);
+  color: var(--red);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.error-actions .primary.feature {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
 .confirm-backdrop {
   position: fixed;
   inset: 0;

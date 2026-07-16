@@ -1,0 +1,6 @@
+text-tools.w-ilyas.site {
+	encode gzip
+	root * /home/ubuntu/thinkering/text-tools
+	try_files {path} /index.html
+	file_server
+}
