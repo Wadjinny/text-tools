@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CyberChef Streamlist is a React-based web application that implements a visual pipeline editor for text transformation. Users can create, organize, and execute JavaScript transformation steps in a drag-and-drop interface. The application is deployed to GitHub Pages and uses local storage for persistence.
+Text tools is a React-based web application that implements a visual pipeline editor for text transformation. Users can create, organize, and execute JavaScript transformation steps in a drag-and-drop interface. The application is deployed to GitHub Pages and uses local storage for persistence.
 
 ## Commands
 
 ### Development
 ```bash
-cd app
+cd frontend
 pnpm install          # Install dependencies (pnpm 10.28.2+)
 pnpm dev              # Start dev server on port 5173
 pnpm build            # Type-check with tsc and build for production
@@ -19,7 +19,7 @@ pnpm preview          # Preview production build
 ```
 
 ### Deployment
-The application auto-deploys to GitHub Pages on push to master via `.github/workflows/deploy-pages.yml`. The build sets `VITE_BASE` environment variable to `/<repo-name>/` for correct asset paths.
+The application auto-deploys to GitHub Pages on push to master/main via `.github/workflows/deploy-pages.yml`. The build sets `VITE_BASE` to `/<repo-name>/` for correct asset paths and copies `dist/index.html` to `dist/404.html` so deep links like `/pipeline/:id` work as an SPA fallback.
 
 ## Architecture
 
@@ -27,22 +27,26 @@ The application auto-deploys to GitHub Pages on push to master via `.github/work
 The application is built around a pipeline execution model where:
 1. User input text flows through a series of JavaScript transformation steps
 2. Each step receives the output of the previous step as `input`
-3. Steps can be muted (skipped), reordered, or organized into groups
+3. Steps can be muted (skipped), reordered, or organized into pipelines
 4. The pipeline auto-executes with a 20ms debounce after any change (input, code, or step order)
 
 ### Data Flow
 ```
-App.tsx (orchestrator)
-  ├─ useStepGroups     → manages collections of step pipelines
-  ├─ useSteps          → manages steps within active group
-  ├─ useLibrary        → manages reusable step templates
-  ├─ usePipeline       → executes transformations (input → output)
-  └─ useSearch         → filters groups/steps/library by search terms
+main.tsx
+  └─ PipelinesProvider     → shared pipelines + library + persistence
+       └─ RouterProvider
+            ├─ /                      → HomePage (list + create)
+            └─ /pipeline/:pipelineId  → EditorPage
+                 ├─ useSteps          → steps within active pipeline
+                 ├─ useLibrary        → reusable step templates
+                 ├─ usePipeline       → executes transformations
+                 └─ useSearch         → filters pipelines/steps/library
 ```
 
 ### State Management
-- **No external state library**: All state managed via React hooks
-- **Persistence**: Entire app state serialized to localStorage as `StoredState` (groups, steps, library, selections)
+- **No external state library**: All state managed via React hooks + `PipelinesContext`
+- **Routing**: `react-router` data mode; URL is source of truth for the open pipeline
+- **Persistence**: App state serialized to localStorage as `StoredState` (pipelines, steps, library). `selectedPipelineId` is not restored — reopening always lands on home.
 - **Storage keys**: Defined in `src/utils/constants.ts` with versioning support
 - **Layout state**: Panel dimensions (sidebar width, library width, editor height) persisted separately
 
@@ -55,15 +59,15 @@ Steps execute in a sandboxed JavaScript context via `new Function()`:
 
 ### Component Architecture
 - **App.tsx**: Monolithic orchestrator component (1082 lines) that manages all UI state and coordinates hooks
-- **Custom hooks** (`src/hooks/`): Extract business logic for groups, steps, library, pipeline, and search
+- **Custom hooks** (`src/hooks/`): Extract business logic for pipelines, steps, library, execution, and search
 - **Minimal components** (`src/components/`): Three presentational components for step items and droppable areas
 - **Drag-and-drop**: Uses `@dnd-kit` for sortable steps and drag-to-library functionality
 
 ### Key Data Types (`src/types.ts`)
 - `Step`: Individual transformation with id, title, code, muted flag, timestamps
-- `StepGroup`: Named collection of steps with timestamps
+- `Pipeline`: Named collection of steps with timestamps
 - `LibraryStep`: Reusable step template (like Step but without muted flag)
-- `StoredState`: Complete serializable app state (version 1)
+- `StoredState`: Complete serializable app state (version 2)
 - `RunScope`: Pipeline execution scope ('all' | 'from' | 'to') - currently locked to 'all'
 
 ## Important Patterns
