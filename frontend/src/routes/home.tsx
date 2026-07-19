@@ -50,13 +50,7 @@ function HomePage() {
       <section className="home-card">
         {pipelines.length === 0 ? (
           <div className="home-empty">
-            <span className="navbar-logo" aria-hidden="true">
-              Tt
-            </span>
-            <h2>Create your first pipeline</h2>
-            <p className="subtitle">
-              Build a sequence of JavaScript steps that transform text from input to output.
-            </p>
+            <p className="subtitle">No pipelines yet. Create one to start transforming text.</p>
             <button type="button" className="primary feature" onClick={handleCreate}>
               Create pipeline
             </button>
@@ -64,10 +58,7 @@ function HomePage() {
         ) : (
           <>
             <div className="panel-header home-header">
-              <div>
-                <h2>Your pipelines</h2>
-                <p className="subtitle">Open a saved pipeline or start a new one.</p>
-              </div>
+              <h2>Pipelines</h2>
               <button type="button" className="primary feature" onClick={handleCreate}>
                 Create pipeline
               </button>
@@ -102,7 +93,7 @@ function HomePage() {
                       requestDelete(pipeline)
                     }}
                   >
-                    <Trash2 size={16} strokeWidth={1.75} aria-hidden="true" />
+                    <Trash2 size={14} strokeWidth={1.75} aria-hidden="true" />
                   </button>
                 </div>
               ))}

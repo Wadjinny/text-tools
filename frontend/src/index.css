@@ -1,111 +1,50 @@
 :root {
-  /* Soft & Rounded — light */
-  --indigo: #4f46e5;
-  --indigo-hover: #4338ca;
-  --indigo-soft: #eef2ff;
-  --indigo-100: #e0e7ff;
-  --white: #ffffff;
-  --bg: #f6f7f9;
-  --g100: #f3f4f6;
-  --g200: #e5e7eb;
-  --g300: #d1d5db;
-  --g400: #9ca3af;
-  --g500: #6b7280;
-  --g700: #374151;
-  --g900: #111827;
+  /* Surfaces — elevation = slightly lighter fill */
+  --bg: #1e1e1e;
+  --panel: #252526;
+  --raised: #2d2d2d;
+  --card: #2d2d30;
+  --card-title: #37373d;
+  --btn: #3a3d41;
+  --hover: #2a2a2a;
 
-  --green: #059669;
-  --green-soft: #ecfdf5;
-  --red: #dc2626;
-  --red-soft: #fef2f2;
-  --amber: #d97706;
-  --amber-soft: #fffbeb;
+  --border: #3c3c3c;
 
-  --r-card: 20px;
-  --r-ctrl: 14px;
-  --r-pill: 999px;
+  /* Text ladder */
+  --text: #d4d4d4;
+  --text-label: #bdbdbd;
+  --text-muted: #9d9d9d;
+  --text-faint: #808080;
+  --text-ghost: #6d6d6d;
 
-  --sh-card: 0 4px 16px rgba(17, 24, 39, 0.05);
-  --sh-hover: 0 8px 24px rgba(17, 24, 39, 0.09);
-  --sh-pop: 0 12px 32px rgba(79, 70, 229, 0.22);
+  /* Color channels */
+  --accent: #0e639c;
+  --accent-tint: #0e639c44;
+  --data: #4ec9b0;
+  --data-bright: #7ee0c8;
+  --error: #f48771;
+  --error-bg: #3a1d1d;
 
-  --font: 'Segoe UI', system-ui, -apple-system, 'Inter', sans-serif;
+  /* Radii */
+  --r-sm: 3px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --r-track: 999px;
 
-  /* Legacy aliases used by App.css */
-  --bg-primary: var(--bg);
-  --bg-secondary: var(--white);
-  --bg-tertiary: var(--g100);
-  --bg-quaternary: var(--g200);
+  --sh-pop: 0 6px 20px rgba(0, 0, 0, 0.5);
 
-  --text-primary: var(--g900);
-  --text-secondary: var(--g700);
-  --text-muted: var(--g500);
-  --text-meta: var(--g400);
-
-  --border-primary: var(--g100);
-  --border-secondary: var(--g200);
-  --border-tertiary: var(--g300);
-
-  --accent-primary: var(--indigo);
-  --accent-hover: var(--indigo-hover);
-  --accent-bg: var(--indigo-soft);
-  --accent-bg-hover: var(--indigo-100);
-
-  --color-danger: var(--red);
-  --color-danger-bg: var(--red-soft);
-  --color-danger-border: var(--red);
-  --color-success-bg: var(--green-soft);
-  --color-warning-bg: var(--amber-soft);
-  --color-warning-text: var(--amber);
-
-  --splitter-primary: var(--g300);
-  --splitter-hover: var(--g400);
-  --splitter-active: var(--g500);
-
-  --shadow-panel: var(--sh-card);
-  --shadow-menu: var(--sh-hover);
-  --shadow-pipeline: var(--sh-card);
-  --shadow-pipeline-hover: var(--sh-hover);
-
-  --pipeline-gradient: var(--white);
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', Menlo, monospace;
 
   font-family: var(--font);
-  line-height: 1.45;
+  line-height: 1.35;
   font-weight: 400;
-  color: var(--g900);
+  color: var(--text);
   background-color: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-.dark,
-[data-theme='dark'] {
-  --indigo: #6366f1;
-  --indigo-hover: #818cf8;
-  --indigo-soft: #1e1b4b;
-  --indigo-100: #312e81;
-  --white: #1c1f26;
-  --bg: #0f1115;
-  --g100: #252830;
-  --g200: #2e323c;
-  --g300: #3d424e;
-  --g400: #8b92a0;
-  --g500: #9ca3af;
-  --g700: #d1d5db;
-  --g900: #f3f4f6;
-
-  --green: #34d399;
-  --green-soft: #064e3b;
-  --red: #f87171;
-  --red-soft: #450a0a;
-  --amber: #fbbf24;
-  --amber-soft: #78350f;
-
-  --sh-card: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --sh-hover: 0 8px 24px rgba(0, 0, 0, 0.55);
-  --sh-pop: 0 12px 32px rgba(99, 102, 241, 0.35);
 }
 
 * {
@@ -114,18 +53,17 @@
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--g900);
-  font-size: 14px;
-  line-height: 1.45;
-}
-
+html,
+body,
 #root {
-  min-height: 100vh;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
 }
 
 a {
@@ -144,6 +82,7 @@ button {
   border: none;
   cursor: pointer;
   background: none;
+  color: inherit;
 }
 
 button:disabled {

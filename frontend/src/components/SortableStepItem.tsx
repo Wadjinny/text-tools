@@ -31,7 +31,7 @@ export function SortableStepItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled: props.editingTitleStepId === id });
 
   const combinedStyle = {
     ...style,

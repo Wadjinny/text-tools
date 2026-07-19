@@ -24,9 +24,6 @@ function ErrorPage() {
   return (
     <div className="error-page">
       <section className="error-card" role="alert">
-        <span className="navbar-logo" aria-hidden="true">
-          Tt
-        </span>
         <h1>{title}</h1>
         <p className="subtitle">{message}</p>
         {import.meta.env.DEV && detail && (

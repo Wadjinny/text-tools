@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useMatch } from 'react-router'
-import { Moon, Sun } from 'lucide-react'
-import { useTheme } from '../hooks/useTheme'
 import { usePipelinesContext } from '../hooks/usePipelinesContext'
 import '../App.css'
 
 function RootLayout() {
-  const { theme, toggleTheme } = useTheme()
   const pipelineMatch = useMatch({ path: 'pipeline/:pipelineId', end: true })
   const pipelineId = pipelineMatch?.params.pipelineId
   const { pipelines, updatePipelineTitle } = usePipelinesContext()
@@ -86,23 +83,8 @@ function RootLayout() {
             </>
           )}
         </div>
-        <div className="navbar-actions">
-          <button
-            type="button"
-            className="ghost icon-btn"
-            onClick={toggleTheme}
-            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-          >
-            {theme === 'light' ? (
-              <Moon size={18} strokeWidth={1.75} aria-hidden="true" />
-            ) : (
-              <Sun size={18} strokeWidth={1.75} aria-hidden="true" />
-            )}
-          </button>
-        </div>
       </nav>
-      <Outlet context={{ theme }} />
+      <Outlet />
     </div>
   )
 }

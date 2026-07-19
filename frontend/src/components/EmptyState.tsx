@@ -14,7 +14,7 @@ export function EmptyState({ icon: Icon, label, className = '' }: EmptyStateProp
       aria-label={label}
       title={label}
     >
-      <Icon className="empty-state-icon" size={26} strokeWidth={1.4} aria-hidden="true" />
+      <Icon className="empty-state-icon" size={20} strokeWidth={1.4} aria-hidden="true" />
     </div>
   )
 }

@@ -20,7 +20,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { motion } from 'framer-motion'
-import { Navigate, useOutletContext, useParams } from 'react-router'
+import { Navigate, useParams } from 'react-router'
 import {
   ListPlus,
   Library,
@@ -46,6 +46,7 @@ import { EmptyState } from '../components/EmptyState'
 import type { LibraryStep } from '../types'
 import {
   EDITOR_SPLIT_STORAGE_KEY,
+  IO_SPLIT_STORAGE_KEY,
   SIDEBAR_SPLIT_STORAGE_KEY,
   LIBRARY_SPLIT_STORAGE_KEY,
   SIDEBAR_COLLAPSED_STORAGE_KEY,
@@ -57,6 +58,7 @@ import {
   DEFAULT_SIDEBAR_WIDTH,
   DEFAULT_LIBRARY_WIDTH,
   DEFAULT_EDITOR_HEIGHT,
+  MIN_IO_PANE,
   HELPERS_LIB,
 } from '../utils/constants'
 import { usePipelinesContext } from '../hooks/usePipelinesContext'
@@ -65,12 +67,7 @@ import { useLibrary } from '../hooks/useLibrary'
 import { usePipeline } from '../hooks/usePipeline'
 import { useSearch } from '../hooks/useSearch'
 
-type EditorOutletContext = {
-  theme: 'light' | 'dark'
-}
-
 function EditorPage() {
-  const { theme } = useOutletContext<EditorOutletContext>()
   const { pipelineId } = useParams<{ pipelineId: string }>()
   const {
     pipelines,
@@ -134,7 +131,22 @@ function EditorPage() {
   )
 
   // 5. UI state
+  const [stepTitleDraft, setStepTitleDraft] = useState('')
   const [ioLayout, setIoLayout] = useState<'horizontal' | 'vertical'>('vertical')
+  const [ioSplitPx, setIoSplitPx] = useState<number | null>(() => {
+    try {
+      const raw = localStorage.getItem(IO_SPLIT_STORAGE_KEY)
+      if (!raw) return null
+      const n = Number(raw)
+      return Number.isFinite(n) && n > 0 ? n : null
+    } catch {
+      return null
+    }
+  })
+  const [isResizingIo, setIsResizingIo] = useState(false)
+  const ioSectionRef = useRef<HTMLElement | null>(null)
+  const resizeStartIoRef = useRef(0)
+  const resizeStartIoSplitRef = useRef(0)
   const [isLibraryExpanded, setIsLibraryExpanded] = useState(true)
   const [saveNotice, setSaveNotice] = useState<string | null>(null)
   const saveNoticeTimerRef = useRef<number | null>(null)
@@ -178,7 +190,12 @@ function EditorPage() {
         showSaveNotice(
           `${result.existing.title} is already used by another step.`,
         )
+        return false
       }
+      if (!result.ok && result.reason === 'empty-title') {
+        return false
+      }
+      return true
     },
     [stepsAPI.updateStep, showSaveNotice],
   )
@@ -191,6 +208,10 @@ function EditorPage() {
     libraryAPI.findLibraryDuplicate,
     libraryAPI.librarySteps,
   ])
+
+  useEffect(() => {
+    setStepTitleDraft(stepsAPI.selectedStep?.title ?? '')
+  }, [stepsAPI.selectedStep?.id, stepsAPI.selectedStep?.title])
 
   useEffect(() => {
     return () => {
@@ -336,6 +357,44 @@ function EditorPage() {
       // ignore
     }
   }, [editorPanelHeight])
+
+  useEffect(() => {
+    if (ioSplitPx == null) return
+    try {
+      localStorage.setItem(IO_SPLIT_STORAGE_KEY, String(ioSplitPx))
+    } catch {
+      // ignore
+    }
+  }, [ioSplitPx])
+
+  const ioSplitAxis = ioLayout === 'horizontal' || !isWideLayout ? 'y' : 'x'
+
+  useEffect(() => {
+    if (!isResizingIo) return
+    const handleMove = (event: PointerEvent) => {
+      const section = ioSectionRef.current
+      if (!section) return
+      const rect = section.getBoundingClientRect()
+      const handleSize = 4
+      const startSize = resizeStartIoSplitRef.current
+      if (ioSplitAxis === 'x') {
+        const delta = event.clientX - resizeStartIoRef.current
+        const max = Math.max(MIN_IO_PANE, rect.width - MIN_IO_PANE - handleSize)
+        setIoSplitPx(Math.min(max, Math.max(MIN_IO_PANE, startSize + delta)))
+      } else {
+        const delta = event.clientY - resizeStartIoRef.current
+        const max = Math.max(MIN_IO_PANE, rect.height - MIN_IO_PANE - handleSize)
+        setIoSplitPx(Math.min(max, Math.max(MIN_IO_PANE, startSize + delta)))
+      }
+    }
+    const handleUp = () => setIsResizingIo(false)
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp, { once: true })
+    return () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+    }
+  }, [isResizingIo, ioSplitAxis])
 
   useEffect(() => {
     const onResize = () => setIsWideLayout(window.innerWidth > 1024)
@@ -555,7 +614,7 @@ function EditorPage() {
               aria-label="Expand steps panel"
               title="Expand steps"
             >
-              <PanelLeftOpen size={18} strokeWidth={1.75} aria-hidden="true" />
+              <PanelLeftOpen size={14} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
         ) : (
@@ -608,7 +667,7 @@ function EditorPage() {
                   aria-label="Collapse steps panel"
                   title="Collapse steps"
                 >
-                  <PanelLeftClose size={18} strokeWidth={1.75} aria-hidden="true" />
+                  <PanelLeftClose size={14} strokeWidth={1.75} aria-hidden="true" />
                 </button>
               )}
               <button
@@ -618,7 +677,7 @@ function EditorPage() {
                 aria-label="Add step"
                 title="Add step"
               >
-                <Plus size={18} strokeWidth={2.25} aria-hidden="true" />
+                <Plus size={14} strokeWidth={2.25} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -764,7 +823,7 @@ function EditorPage() {
                   aria-label="Expand step editor"
                   title="Expand step editor"
                 >
-                  <PanelTopOpen size={18} strokeWidth={1.75} aria-hidden="true" />
+                  <PanelTopOpen size={14} strokeWidth={1.75} aria-hidden="true" />
                 </button>
               </div>
             ) : (
@@ -778,12 +837,27 @@ function EditorPage() {
                     <input
                       id="step-title"
                       className="panel-title-input"
-                      value={stepsAPI.selectedStep.title}
-                      onChange={(event) => {
-                        applyStepTitle(
-                          stepsAPI.selectedStep!.id,
-                          event.target.value,
-                        )
+                      value={stepTitleDraft}
+                      onChange={(event) => setStepTitleDraft(event.target.value)}
+                      onBlur={(event) => {
+                        const step = stepsAPI.selectedStep
+                        if (!step) return
+                        if (!applyStepTitle(step.id, event.currentTarget.value)) {
+                          setStepTitleDraft(step.title)
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault()
+                          event.currentTarget.blur()
+                        }
+                        if (event.key === 'Escape') {
+                          event.preventDefault()
+                          const original = stepsAPI.selectedStep?.title ?? ''
+                          setStepTitleDraft(original)
+                          event.currentTarget.value = original
+                          event.currentTarget.blur()
+                        }
                       }}
                       aria-label="Step title"
                       placeholder="Step title"
@@ -828,7 +902,7 @@ function EditorPage() {
                         }
                         aria-disabled={!!selectedLibraryDuplicate}
                       >
-                        <BookmarkPlus size={18} strokeWidth={1.75} aria-hidden="true" />
+                        <BookmarkPlus size={14} strokeWidth={1.75} aria-hidden="true" />
                       </button>
                       <button
                         type="button"
@@ -843,9 +917,9 @@ function EditorPage() {
                         aria-pressed={stepsAPI.selectedStep.muted}
                       >
                         {stepsAPI.selectedStep.muted ? (
-                          <VolumeX size={18} strokeWidth={1.75} aria-hidden="true" />
+                          <VolumeX size={14} strokeWidth={1.75} aria-hidden="true" />
                         ) : (
-                          <Volume2 size={18} strokeWidth={1.75} aria-hidden="true" />
+                          <Volume2 size={14} strokeWidth={1.75} aria-hidden="true" />
                         )}
                       </button>
                     </>
@@ -857,7 +931,7 @@ function EditorPage() {
                     aria-label="Collapse step editor"
                     title="Collapse step editor"
                   >
-                    <PanelTopClose size={18} strokeWidth={1.75} aria-hidden="true" />
+                    <PanelTopClose size={14} strokeWidth={1.75} aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -867,7 +941,7 @@ function EditorPage() {
                     <Editor
                       height="100%"
                       language="javascript"
-                      theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
+                      theme="vs-dark"
                       beforeMount={handleEditorBeforeMount}
                       value={stepsAPI.selectedStep?.code ?? ''}
                       onChange={(value) => {
@@ -914,7 +988,19 @@ function EditorPage() {
             >
               <div className="splitter-handle" />
             </div>
-            <section className={`panel io ${ioLayout}`} style={{ flex: '1 1 auto', minHeight: 0 }}>
+            <section
+              ref={ioSectionRef}
+              className={`panel io ${ioLayout}${isResizingIo ? ' is-resizing-io' : ''}`}
+              style={
+                {
+                  flex: '1 1 auto',
+                  minHeight: 0,
+                  ...(ioSplitPx != null
+                    ? { ['--io-split' as string]: `${ioSplitPx}px` }
+                    : undefined),
+                } as React.CSSProperties
+              }
+            >
               <div className="io-panel">
                 <div className="panel-header">
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -922,7 +1008,10 @@ function EditorPage() {
                     <button
                       className="ghost"
                       style={{ padding: '4px', display: 'flex' }}
-                      onClick={() => setIoLayout(prev => prev === 'vertical' ? 'horizontal' : 'vertical')}
+                      onClick={() => {
+                        setIoSplitPx(null)
+                        setIoLayout((prev) => (prev === 'vertical' ? 'horizontal' : 'vertical'))
+                      }}
                       title={ioLayout === 'vertical' ? "Switch to horizontal split" : "Switch to vertical split"}
                     >
                       {ioLayout === 'vertical' ? (
@@ -956,7 +1045,7 @@ function EditorPage() {
                   <Editor
                     height="100%"
                     language={inputLanguage}
-                    theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
+                    theme="vs-dark"
                     beforeMount={handleEditorBeforeMount}
                     value={pipelineAPI.inputText}
                     onChange={(value) => pipelineAPI.setInputText(value ?? '')}
@@ -972,10 +1061,36 @@ function EditorPage() {
                   />
                 </div>
               </div>
+              <div
+                className={ioSplitAxis === 'x' ? 'vsplitter' : 'splitter'}
+                role="separator"
+                aria-orientation={ioSplitAxis === 'x' ? 'vertical' : 'horizontal'}
+                aria-label="Resize input and output"
+                tabIndex={0}
+                onPointerDown={(event) => {
+                  event.preventDefault()
+                  const section = ioSectionRef.current
+                  if (!section) return
+                  const firstPane = section.querySelector('.io-panel') as HTMLElement | null
+                  const rect = firstPane?.getBoundingClientRect()
+                  const fallback =
+                    (ioSplitAxis === 'x'
+                      ? section.getBoundingClientRect().width
+                      : section.getBoundingClientRect().height) / 2
+                  resizeStartIoRef.current =
+                    ioSplitAxis === 'x' ? event.clientX : event.clientY
+                  resizeStartIoSplitRef.current =
+                    ioSplitPx ??
+                    (ioSplitAxis === 'x' ? rect?.width : rect?.height) ??
+                    fallback
+                  setIsResizingIo(true)
+                  ;(event.currentTarget as HTMLDivElement).setPointerCapture(event.pointerId)
+                }}
+              >
+                <div className={ioSplitAxis === 'x' ? 'vsplitter-handle' : 'splitter-handle'} />
+              </div>
               <div className="io-panel">
-                <div 
-                className="panel-header"                 
-                >
+                <div className="panel-header">
                   <h2>Output</h2>
                   <select
                     className="lang-select"
@@ -997,7 +1112,7 @@ function EditorPage() {
                   <Editor
                     height="100%"
                     language={outputLanguage}
-                    theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
+                    theme="vs-dark"
                     beforeMount={handleEditorBeforeMount}
                     value={pipelineAPI.outputText}
                     options={{
@@ -1045,7 +1160,7 @@ function EditorPage() {
             aria-label="Expand library panel"
             title="Expand library"
           >
-            <PanelRightOpen size={18} strokeWidth={1.75} aria-hidden="true" />
+            <PanelRightOpen size={14} strokeWidth={1.75} aria-hidden="true" />
           </button>
         </div>
       ) : (
@@ -1060,11 +1175,11 @@ function EditorPage() {
               aria-label={isLibraryExpanded ? 'Collapse steps library' : 'Expand steps library'}
               title="Steps library"
             >
-              <Library size={18} strokeWidth={1.75} aria-hidden="true" />
+              <Library size={14} strokeWidth={1.75} aria-hidden="true" />
               {isLibraryExpanded ? (
-                <ChevronDown size={16} strokeWidth={1.75} aria-hidden="true" />
+                <ChevronDown size={14} strokeWidth={1.75} aria-hidden="true" />
               ) : (
-                <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" />
+                <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true" />
               )}
             </button>
             {isWideLayout && (
@@ -1075,7 +1190,7 @@ function EditorPage() {
                 aria-label="Collapse library panel"
                 title="Collapse library"
               >
-                <PanelRightClose size={18} strokeWidth={1.75} aria-hidden="true" />
+                <PanelRightClose size={14} strokeWidth={1.75} aria-hidden="true" />
               </button>
             )}
           </div>
@@ -1195,7 +1310,7 @@ function EditorPage() {
                         aria-label="Add to pipeline"
                         title="Add to pipeline"
                       >
-                        <Plus size={16} strokeWidth={2} aria-hidden="true" />
+                        <Plus size={14} strokeWidth={2} aria-hidden="true" />
                       </button>
                       <button
                         type="button"
@@ -1204,7 +1319,7 @@ function EditorPage() {
                         aria-label="Delete from library"
                         title="Delete from library"
                       >
-                        <Trash2 size={16} strokeWidth={1.75} aria-hidden="true" />
+                        <Trash2 size={14} strokeWidth={1.75} aria-hidden="true" />
                       </button>
                     </div>
                     </div>
@@ -1236,7 +1351,7 @@ function EditorPage() {
                       <Editor
                         height="180px"
                         language="javascript"
-                        theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
+                        theme="vs-dark"
                         beforeMount={handleEditorBeforeMount}
                         value={libraryAPI.selectedLibraryStep?.code ?? ''}
                         onChange={(value) => {
@@ -1279,14 +1394,14 @@ function EditorPage() {
             editingTitleStepId={null}
             onSelect={() => {}}
             onContextMenu={() => {}}
-            onUpdateTitle={() => {}}
+            onUpdateTitle={() => true}
             setEditingTitleStepId={() => {}}
             onToggleMuted={() => {}}
             onDelete={() => {}}
             style={{
-              boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
+              boxShadow: 'var(--sh-pop)',
               cursor: 'grabbing',
-              background: '#fff',
+              background: 'var(--card)',
               touchAction: 'none',
             }}
           />

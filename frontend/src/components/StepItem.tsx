@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Trash2, Volume2, VolumeX } from 'lucide-react';
 import type { Step } from '../types';
 
@@ -10,16 +10,15 @@ type StepItemProps = {
   editingTitleStepId: string | null;
   onSelect: (id: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string) => void;
-  onUpdateTitle: (id: string, title: string) => void;
+  onUpdateTitle: (id: string, title: string) => boolean;
   setEditingTitleStepId: (id: string | null) => void;
   onToggleMuted: (id: string) => void;
   onDelete: (id: string) => void;
-  dragHandleProps?: any;
+  dragHandleProps?: Record<string, unknown>;
   style?: React.CSSProperties;
   className?: string;
   innerRef?: React.Ref<HTMLDivElement>;
-  // Allow other props
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export const StepItem = memo(({
@@ -40,10 +39,33 @@ export const StepItem = memo(({
   innerRef,
   ...props
 }: StepItemProps) => {
+  const isEditing = editingTitleStepId === step.id;
+  const [draftTitle, setDraftTitle] = useState(step.title);
+  const skipBlurCommitRef = useRef(false);
+
+  useEffect(() => {
+    if (isEditing) {
+      setDraftTitle(step.title);
+    }
+  }, [isEditing, step.id, step.title]);
+
+  const commitTitle = () => {
+    if (!isEditing) return;
+    if (onUpdateTitle(step.id, draftTitle)) {
+      setEditingTitleStepId(null);
+    }
+  };
+
+  const cancelTitle = () => {
+    skipBlurCommitRef.current = true;
+    setDraftTitle(step.title);
+    setEditingTitleStepId(null);
+  };
+
   return (
     <div
       ref={innerRef}
-      className={`step-item ${step.muted ? 'is-muted' : ''} ${isSelected ? 'active' : ''} ${dropTargetIndex === index ? 'drop-target' : ''} ${className || ''}`}
+      className={`step-item ${step.muted ? 'is-muted' : ''} ${isSelected ? 'active' : ''} ${dropTargetIndex === index ? 'drop-target' : ''} ${isEditing ? 'is-editing' : ''} ${className || ''}`}
       onClick={() => onSelect(step.id)}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -53,54 +75,72 @@ export const StepItem = memo(({
       tabIndex={0}
       style={style}
       {...props}
-      {...dragHandleProps}
+      {...(isEditing ? {} : dragHandleProps)}
       onKeyDown={(event) => {
-        // Merge our interaction with dnd-kit keyboard handling
+        if (isEditing) return;
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           onSelect(step.id);
         }
-        if (dragHandleProps?.onKeyDown) {
-          dragHandleProps.onKeyDown(event);
+        const handleKeyDown = dragHandleProps?.onKeyDown;
+        if (typeof handleKeyDown === 'function') {
+          handleKeyDown(event);
         }
       }}
     >
       <div className="step-title">
-        {editingTitleStepId === step.id ? (
+        {isEditing ? (
           <input
             autoFocus
             className="step-title-input"
-            value={step.title}
-            onChange={(e) => onUpdateTitle(step.id, e.target.value)}
-            onBlur={() => setEditingTitleStepId(null)}
+            value={draftTitle}
+            onChange={(e) => setDraftTitle(e.target.value)}
+            onBlur={() => {
+              if (skipBlurCommitRef.current) {
+                skipBlurCommitRef.current = false;
+                return;
+              }
+              commitTitle();
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                setEditingTitleStepId(null);
+                e.preventDefault();
+                e.stopPropagation();
+                commitTitle();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                cancelTitle();
+              } else {
+                e.stopPropagation();
               }
-              e.stopPropagation();
             }}
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span onDoubleClick={() => setEditingTitleStepId(step.id)}>
-              {step.title || `title ${index + 1}`}
-            </span>
-            <span className="step-meta">
-              {new Date(step.createdAt).toLocaleString(undefined, {
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false,
-              })}
-            </span>
-          </div>
+          <span
+            className="step-title-text"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setEditingTitleStepId(step.id);
+            }}
+          >
+            {step.title || `title ${index + 1}`}
+          </span>
         )}
       </div>
+      <span className="step-meta">
+        {new Date(step.createdAt).toLocaleString(undefined, {
+          year: 'numeric',
+          month: 'numeric',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        })}
+      </span>
       <div className="step-actions">
         <button
           type="button"
@@ -115,9 +155,9 @@ export const StepItem = memo(({
           onPointerDown={(e) => e.stopPropagation()}
         >
           {step.muted ? (
-            <VolumeX size={16} strokeWidth={1.75} aria-hidden="true" />
+            <VolumeX size={14} strokeWidth={1.75} aria-hidden="true" />
           ) : (
-            <Volume2 size={16} strokeWidth={1.75} aria-hidden="true" />
+            <Volume2 size={14} strokeWidth={1.75} aria-hidden="true" />
           )}
         </button>
         <button
@@ -131,7 +171,7 @@ export const StepItem = memo(({
           }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <Trash2 size={16} strokeWidth={1.75} aria-hidden="true" />
+          <Trash2 size={14} strokeWidth={1.75} aria-hidden="true" />
         </button>
       </div>
     </div>
