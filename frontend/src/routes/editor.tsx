@@ -1039,6 +1039,8 @@ function EditorPage() {
                     <option value="css">CSS</option>
                     <option value="markdown">Markdown</option>
                     <option value="xml">XML</option>
+                    <option value="sql">SQL</option>
+                    <option value="python">Python</option>
                   </select>
                 </div>
                 <div className="io-editor">
@@ -1104,6 +1106,8 @@ function EditorPage() {
                     <option value="css">CSS</option>
                     <option value="markdown">Markdown</option>
                     <option value="xml">XML</option>
+                    <option value="sql">SQL</option>
+                    <option value="python">Python</option>
                   </select>
                 </div>
                 <div
